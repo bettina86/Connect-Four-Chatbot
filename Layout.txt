@@ -1,0 +1,135 @@
+
+#######################################
+
+This was the file I used to plan out my initial ideas. 
+I also used this file to reference certain scenarios during the build phase.
+
+#######################################
+
+
+
+#################
+# 1 2 3 4 5 6 7 #
+#################  - Start State
+# E E E E E E E #   String "#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE"
+# E E E E E E E # Position  01234567
+# E E E E E E E #                   01234567
+# E E E E E E E #                           01234567     
+# E E E E E E E #                                   01234567
+# E E E E E E E #                                           01234567
+#################                                                   01234567
+
+#################
+# E E E E E E E # - Y Wins - Horizontal
+# E E E E E E E #
+# E E E E E E E #  String: "#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE#EEERREE#ERYYYYE#"
+# E E E E E E E #
+# E E E R R E E # 
+# E R Y Y Y Y E #
+#################
+
+#################
+# E E E E E E E # - Y Wins - Vertical 
+# E E E E E E E #
+# Y E E E E E E # String "#EEEEEEE#EEEEEEE#YEEEEEE#YEEEEEE#YEEEEEE#YRRREEE"               Seperate Case of Vertical (not displayed)- String "#EEEEEEE#EEEEEEE#EYEEEEEE#EYEEEEE#EYEEEEE#RYRREEE"
+# Y E E E E E E #                          17      25      33      41
+# Y E E E E E E #                              +8      +8      +8    
+# Y R R R E E E #
+#################
+
+#################
+# E E E E E E E # - R Wins - Diagonal (positive)
+# E E E E E E E #
+# E E E E R E E # String "#EEEEEEE#EEEEEEE#EEEEREE#EEYRYEE#EERRYEE#YRYYREE#"
+# E E Y R Y E E #                              W      W      W      W
+# E E R R Y E E #                              21     28     35     42
+# Y R Y Y R E E #                                  +7     +7    +7
+#################
+
+################# - R Wins - Diagonal (negative)
+# E R E E E E E # String "#EREEEEE#ERREEEE#EYYREEE#ERRYREE#EYYRYEE#EYYRYRE"
+# E R R E E E E #           W        W        W        W
+# E Y Y R E E E #           2        11       20       29
+# E R R Y R E E #				+9		+9			+9
+# E Y Y R Y E E #
+# E Y Y R Y R E #
+#################
+
+Start out with a coin flip of who goes first.
+
+Some Function to test current state (check no one has won, and it's still possible to go).
+
+while(somefunction){
+Execute code
+}
+
+WIN CONDITIONS:
+
+HORTIZONTAL: 
+
+"RRRR", "YYYY"
+
+###########################################
+
+VERTICAL:
+Don't split, for(i=1;i<23;i++){if position i && (i+8) && (i+16} && (i+24)}
+
+###########################################
+
+DIAGONAL (2 PARTS): 
+
+POSITIVE:
+
+for(i=4;i<45;i++){if position i && (i+7) && (i+14} && (i+21)}
+
+-------------------------------------------
+
+NEGATIVE:
+
+for(i=1;i<23;i++){if position i && (i+9) && (i+18} && (i+27)}
+
+###########################################
+
+NO MORE MOVES:
+
+if the string contains no more E.
+
+###########################################
+
+LEGAL MOVE:
+
+User will enter a number, corresponding to a column they wish to place their disc.
+The program will check that it is possible to place a disc in that column (i.e. the colum isn't full). 
+If it is possible to place a disc in that column, then the program will check each row in that column (starting from the bottom) and place the disc in the first available position (which will keep moves legal).
+
+###########################################
+
+AI: 
+
+EASY: Roll 1-7, places whatever that lands on, where it can.
+
+MEDIUM: If AI has 3 in a row, roll 7-10 for it to win (if it can).
+		If Human has 3 in a row, roll 1-3 to stop it (if it can)
+		If AI has 2 in a row, roll 5-10 for it to get 3 in in a row (if it can)
+		If Human has 2 in a row, roll 1-5 to stop it.
+		If Ai has 1, roll 5-10 for it to get 2 in a row (if it can)
+		Else Roll 1-7 and go for random
+		
+HARD: If AI has 3 in a row, roll 5-10 for it to win (if it can).
+		If Human has 3 in a row, roll 1-5 to stop it (if it can)
+		If AI has 2 in a row, roll 3-10 for it to get 3 in in a row (if it can)
+		If Human has 2 in a row, roll 1-7 to stop it.
+		If AI has 1, roll 3-10 for it to get 2 in a row (if it can)
+		Else Roll 1-7 and go for random
+
+############################################
+
+STOP/CANCEL Game:
+
+User types cancel/abort etc and it will stop the game.
+
+#############################################
+
+RESTART Game:
+
+User types restart and the board state goes back to the start state		
