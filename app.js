@@ -1,5 +1,3 @@
-//REMOVE message being sent, make playersTurn = true if it's their turn, - in fact rewrite that. Fix layout.
-
 var restify = require('restify');
 var builder = require('botbuilder');
 
@@ -23,8 +21,7 @@ var defaultLayout = "#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE"; //define
 var layout; //"#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE#EEEEEEE" is the default board state, in case it is accidently changed.
 var isGameOver;
 var messageSent;
-var firstTurn;
-var playersTurn; //defines varible global variables that are used in the program.
+var firstTurn; //defines varible global variables that are used in the program.
 var replaced;
 var computerMove;
 var winner;
@@ -124,28 +121,22 @@ bot.dialog('startGame', function(session){
 
     if(Math.random() < 0.5){ //"dice roll" to see who goes first.
       session.send("Congratulations, you go first.") //if the "dice" rolls less than 0.5 the player gets to go first.
-      playersTurn = true;
-    }
-    else{
-      session.send("Unlucky, I'm going first.") //if the "dice" rolls more than 0.5 the computer goes first.
-    }
-
-
-    if(playersTurn){ //if the player got to go first.
       layoutDisplay(); //work out the layout of the board.
       session.send(displayFormat); //display the layout of the board.
       session.beginDialog('playerTurn'); //begin the the dialog for the player's turn.
     }
     else{
+      session.send("Unlucky, I'm going first.") //if the "dice" rolls more than 0.5 the computer goes first.
       session.beginDialog('computerTurn'); //if its the computers turn, begin the dialog of the computer's turn - note I haven't displayed the board here, because it gets displayed at the end of the computer's turn.
     }
+
 });
 
 bot.dialog('playerTurn', [ //dialog for the player's turn.
     function (session){
 
-        rules(); //checks the rules. If someone has won, or the game is a draw, the "isGameOver" will be set to true.
-        if(!isGameOver){ //if the game isn't over.
+      rules(); //checks the rules. If someone has won, or the game is a draw, the "isGameOver" will be set to true.
+      if(!isGameOver){ //if the game isn't over.
         builder.Prompts.text(session, "Where would you like to go?"); //asks the player where they would like to go.
       }
       else{ //if the game is over.
@@ -438,7 +429,6 @@ function stateSetter(){ //sets all the variables needed at the start of the game
   isGameOver = false;
   messageSent = false;
   firstTurn = true;
-  playersTurn = false;
   replaced = false;
   winner = "";
   endingReason = "";
@@ -537,7 +527,6 @@ function computersGeneratedMove(){ //move to generate the computer's turn.
           layout = tempArray.join(); //make the board layout back into a string.
           layout = layout.replace(/,/g, ""); //remove the commas that appeared as a result of cutting the string into multiple elements in an array.
           replaced = true; //tell the function that you have replaced a chip.
-          message = false;
         }
       }
     }
@@ -569,12 +558,10 @@ function cmCheck3h(chip){
           if(i<41){
             if(layout.charAt(i+eBelow) == "R" || layout.charAt(i+eBelow) == "Y"){
               placeR(i+ePos);
-              message = "3h" + chip;
             }
           }
           else{
             placeR(i+ePos);
-            message = "3h" + chip;
           }
       }
     }
@@ -678,7 +665,7 @@ function cmCheck2h(chip){ //checks if there are 2 horizontal chips that could ma
            }
          }
          else{//if we are looking at the bottom row we can't (and wouldn't need to) look at the row below it - in this case we just put a red chip ("R") in e1Pos
-              placeR(e1Pos);
+              placeR(i+e1Pos);
          }
         }
       }
