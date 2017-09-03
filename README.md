@@ -4,9 +4,9 @@ This is my connect four chat bot developed with Node.js using the Microsoft Bot 
 Prerequisites:
 
 1. Install Node.js.
-2. Install the SDK:
-  2.1 Use the command "npm install --save botbuilder" in CMD.
-  2.2 Use the command "npm install --save restify" in CMD.
+2. Install the SDK:  
+  2.1 Use the command "npm install --save botbuilder" in CMD.  
+  2.2 Use the command "npm install --save restify" in CMD.  
 3. Install the bot emulator: https://emulator.botframework.com/
 
 ------------------------------------------------------------------------------------------------------------------------------------
@@ -26,10 +26,10 @@ Instructions:
 How to Play:
 1. After saying hello, the bot will ask if you wish to play.
 2. Respond "Yes" if you want to play, "No" if you don't, and "Help" if you want help.
-3. In order to make your move, simply state the column number you wish to enter your chip in.
-  3.1 Your chips are represented by a "Y" (yellow chips).
-  3.2 The computer's chips are represented by "R" (red chips).
-  3.3 Empty spaces are represented by "E".
+3. In order to make your move, simply state the column number you wish to enter your chip in.  
+  3.1 Your chips are represented by a "Y" (yellow chips).  
+  3.2 The computer's chips are represented by "R" (red chips).  
+  3.3 Empty spaces are represented by "E".  
 4. You can win by getting 4 in a row horizontally, vertically, or diagonally
 5. If you wish to restart, type "Restart" and then type "Yes".
 
