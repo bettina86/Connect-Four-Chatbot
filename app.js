@@ -1,3 +1,5 @@
+//REMOVE message being sent, make playersTurn = true if it's their turn, - in fact rewrite that. Fix layout.
+
 var restify = require('restify');
 var builder = require('botbuilder');
 
@@ -31,6 +33,10 @@ var endingReasonArray = [];
 var gameEndMessage;
 var playerResponse;
 var chosenDialog;
+var difficulty;
+var informedMove;
+var triedInformedMove;
+var scenario;
 
 
 bot.dialog('/', [ //dialog that is called in response to any sort of messsage at the start of the program.
@@ -43,7 +49,7 @@ bot.dialog('/', [ //dialog that is called in response to any sort of messsage at
 
         switch(playerResponse){
           case 'yes':
-            session.beginDialog('startGame'); //if they said they want to start the game, the system brings them to the dialog for starting the game.
+            session.beginDialog('difficultySelect'); //if they said they want to start the game, the system brings them to the dialog for starting the game.
             break;
           case 'help':
             session.beginDialog('helpStart'); //opens up the "helpStart" dialog if the user responds "help" - note the help and helpStart dialogs are slightly different.
@@ -58,27 +64,81 @@ bot.dialog('/', [ //dialog that is called in response to any sort of messsage at
   }
 ]);
 
-bot.dialog('startGame', function(session){ //dialog for the starting of the game.
+bot.dialog('difficultySelect', [ //dialog to choose the AI difficulty.
+  function(session){
+    builder.Prompts.text(session, "What difficulty would you like? Easy, Medium or Hard?");
+  },
+  function(session, results){
+    playerResponse = results.response.toLowerCase();
 
-  stateSetter(); //sets all the variables to be correct for the start of the game (needed in case the user restarts). Examples are "layout = defaultLayout" and "isGameOver = false".
+    switch(playerResponse){
+      case "easy":
+        difficulty = "Easy";
+        session.beginDialog('startGame');
+        break;
+      case "medium":
+        difficulty = "Medium";
+        session.beginDialog('startGame');
+        break;
+      case "hard":
+        difficulty = "Hard";
+        session.beginDialog('startGame');
+        break;
+      default:
+        session.beginDialog('invalidDifficulty'); //if they didn't enter a difficulty, take them to the invalidDifficulty dialog.
+    }
 
-  if(Math.random() < 0.5){ //"dice roll" to see who goes first.
-    session.send("Congratulations, you go first.") //if the "dice" rolls less than 0.5 the player gets to go first.
-    playersTurn = true;
   }
-  else{
-    session.send("Unlucky, I'm going first.") //if the "dice" rolls more than 0.5 the computer goes first.
+]);
+
+bot.dialog('invalidDifficulty', [
+  function(session){
+    builder.Prompts.text(session, "That was an invalid difficulty. What difficulty would you like? Easy, Medium or Hard?");
+  },
+  function(session, results){
+    playerResponse = results.response.toLowerCase();
+
+    switch(playerResponse){
+      case "easy":
+        difficulty = "easy";
+        session.beginDialog('startGame');
+        break;
+      case "medium":
+        difficulty = "medium";
+        session.beginDialog('startGame');
+        break;
+      case "hard":
+        difficulty = "hard";
+        session.beginDialog('startGame');
+        break;
+      default:
+        session.beginDialog('invalidDifficulty'); //if they didn't enter a difficulty, loop this dialog.
+    }
   }
+]);
 
 
-  if(playersTurn){ //if the player got to go first.
-  layoutDisplay(); //work out the layout of the board.
-  session.send(displayFormat); //display the layout of the board.
-  session.beginDialog('playerTurn'); //begin the the dialog for the player's turn.
-  }
-  else{
-    session.beginDialog('computerTurn'); //if its the computers turn, begin the dialog of the computer's turn - note I haven't displayed the board here, because it gets displayed at the end of the computer's turn.
-  }
+bot.dialog('startGame', function(session){
+
+    stateSetter(); //sets all the variables to be correct for the start of the game (needed in case the user restarts). Examples are "layout = defaultLayout" and "isGameOver = false".
+
+    if(Math.random() < 0.5){ //"dice roll" to see who goes first.
+      session.send("Congratulations, you go first.") //if the "dice" rolls less than 0.5 the player gets to go first.
+      playersTurn = true;
+    }
+    else{
+      session.send("Unlucky, I'm going first.") //if the "dice" rolls more than 0.5 the computer goes first.
+    }
+
+
+    if(playersTurn){ //if the player got to go first.
+      layoutDisplay(); //work out the layout of the board.
+      session.send(displayFormat); //display the layout of the board.
+      session.beginDialog('playerTurn'); //begin the the dialog for the player's turn.
+    }
+    else{
+      session.beginDialog('computerTurn'); //if its the computers turn, begin the dialog of the computer's turn - note I haven't displayed the board here, because it gets displayed at the end of the computer's turn.
+    }
 });
 
 bot.dialog('playerTurn', [ //dialog for the player's turn.
@@ -150,14 +210,14 @@ bot.dialog('help', [ //dialog for if the user asks for help as a response.
 bot.dialog('helpStart', [
   function(session){
     session.send("This is Simon Perryman's Connect Four chatbot.\n\nIf you would like to play, please enter 'yes'.\n\nWhen we are playing the game, I will display the board, in order for you to place a chip somewhere, please enter a number between 1 and 7 (which corresponds to a column) in order to move.\n\n If you would like to restart, at any time after you've started, please enter 'restart'.\n\nIf you need help at any time just enter 'help'. I hope that helps."); //help message
-    builder.Prompts.text(session, "Would you like to play? Answer 'Yes' to play."); //ask them again if they would like to play.
+    builder.Prompts.text(session, "Would you like to play?"); //ask them again if they would like to play.
   },
   function(session, results){
     playerResponse = results.response.toLowerCase(); //assigns the variable playerResponse the players response to the above question.
 
       switch(playerResponse){
         case 'yes':
-          session.beginDialog('startGame'); //if they say yes start the game
+          session.beginDialog('difficultySelect'); //if they say yes start the game
           break;
         case 'help':
           session.beginDialog('helpStart'); //if they ask for help again, loop this
@@ -178,8 +238,8 @@ bot.dialog('restart', [ //dialog for restarting
   function(session, results){
     playerResponse = results.response.toLowerCase();
     if(playerResponse == 'yes'){
-      sessin.send("Ok let's restart the game.");
-      session.beginDialog('startGame'); //if yes tells them they restarted, and runs the startGame dialog (this will reset variables to their default values - e.g. layout = defaultLayout).
+      session.send("Ok let's restart the game.");
+      session.beginDialog('difficultySelect'); //if yes tells them they restarted, and runs the startGame dialog (this will reset variables to their default values - e.g. layout = defaultLayout).
     }else if(playerResponse == 'no'){
       session.beginDialog('newPlayerResponse'); //if they say no, brings them to the newPlayerResponse
     }else{
@@ -195,8 +255,8 @@ bot.dialog('restartLoop', [ //this is in case they give a response that is not y
   function(session, results){
     playerResponse = results.response.toLowerCase();
     if(playerResponse == 'yes'){
-      sessin.send("Ok let's restart the game."); //if yes tells them they restarted, and runs the startGame dialog (this will reset variables to their default values - e.g. layout = defaultLayout).
-      session.beginDialog('startGame');
+      session.send("Ok let's restart the game."); //if yes tells them they restarted, and runs the startGame dialog (this will reset variables to their default values - e.g. layout = defaultLayout).
+      session.beginDialog('difficultySelect');
     }else if(playerResponse == 'no'){
       session.beginDialog('newPlayerResponse'); //if they say no, brings them to the newPlayerResponse
     }else{
@@ -238,7 +298,7 @@ bot.dialog('incorrectInputStart', [ //called before the game starts if the user 
 
       switch(playerResponse){
         case 'yes':
-          session.beginDialog('startGame'); //if the response is "yes", starts the game.
+          session.beginDialog('difficultySelect'); //if the response is "yes", starts the game.
           break;
         case 'help':
           session.beginDialog('helpStart'); //if they ask for help, then it will open the "helpStart" (help for before they begin the game) dialog.
@@ -368,6 +428,7 @@ function gameEndMessageConstructor(){ //function that creates the message that g
     else{
       gameEndMessage += "Unlucky and thanks for playing."; //if the player lost, it thanks them for playing.
     }
+    gameEndMessage += " I'm going to shut down now, if you wish to play again just wake me!";
   }
   endingReasonArray.length = 0; //resets the array, so in future games the array is empty.
 }
@@ -382,6 +443,9 @@ function stateSetter(){ //sets all the variables needed at the start of the game
   winner = "";
   endingReason = "";
   endingReasonArray.length = 0;
+  informedMove = false;
+  triedInformedMove = false;
+  scenario = 1;
 }
 
 function dialogChooser(){ //Function that decides what the player responded with, and how to deal with it.
@@ -416,21 +480,405 @@ function dialogChooser(){ //Function that decides what the player responded with
 
 function computersGeneratedMove(){ //move to generate the computer's turn.
   replaced = false; //at the start of the function ensure that the "lock" is unlocked (with the lock being the boolean "replaced", which is referenced later in the if statement.)
-  computerMove = Math.floor((Math.random() * 7) + 1); //generates a column for the computer to place it's chip.
-  if(layout.charAt(computerMove) != "E"){ //test to see if the column is full.
-    computersGeneratedMove(); //if the column is full, run this function again (i.e. attempt to find a column that isn't full)
+
+
+
+  if(difficulty == "Hard"  || difficulty == "Medium"){ //t will be the lock.
+    while(!triedInformedMove){
+      var rollNeeded3;
+      var rollNeeded2;
+      var roll = Math.random();
+
+      if(difficulty == "Hard"){
+        rollNeeded3 = 0.5;
+        rollNeeded2 = 0.3;
+      }else{
+        rollNeeded3 = 0.7;
+        rollNeeded2 = 0.5;
+      }
+
+      if(roll > rollNeeded3){
+        cmCheck3v("R");
+        cmCheck3h("R");
+        cmCheck3pd("R");
+        cmCheck3nd("R");
+
+        cmCheck3v("Y");
+        cmCheck3h("Y");
+        cmCheck3pd("Y");
+        cmCheck3nd("Y");
+      }
+
+      if(roll > rollNeeded2){
+      cmCheck2h("R");
+      cmCheck2v("R");
+      cmCheck2pd("R");
+      cmCheck2nd("R");
+
+      cmCheck2h("Y");
+      cmCheck2v("Y");
+      cmCheck2pd("Y");
+      cmCheck2nd("Y");
+    }
+
+      triedInformedMove = true; //for when the function loops again (for the uninformed part)
+    }
   }
-  else{ //if the column isn't full
-    for(var i=7; i<48; i=i+8){
-      if( (layout.charAt( (layout.length-1) - (i - computerMove ) ) == "E" ) && !replaced ){ //check each row in that column to see if there is a red or yellow chip in that space (starting from the bottom). Check to see if the function already found a space for the computer's chip.
-        tempArray = layout.split(""); //store the current board layout in an array.
-        tempArray.splice( ((layout.length-1) - (i-computerMove)), 1, "R" ); //replace the empty space with a red chip (computer's colour).
-        layout = tempArray.join(); //make the board layout back into a string.
-        layout = layout.replace(/,/g, ""); //remove the commas that appeared as a result of cutting the string into multiple elements in an array.
-        replaced = true; //tell the function that you have replaced a chip.
+  if(!informedMove){
+    computerMove = Math.floor((Math.random() * 7) + 1); //generates a column for the computer to place it's chip.
+    if(layout.charAt(computerMove) != "E"){ //test to see if the column is full.
+      computersGeneratedMove(); //if the column is full, run this function again (i.e. attempt to find a column that isn't full)
+    }
+    else{ //if the column isn't full
+      for(var i=7; i<48; i=i+8){
+        if( (layout.charAt( (layout.length-1) - (i - computerMove ) ) == "E" ) && !replaced ){ //check each row in that column to see if there is a red or yellow chip in that space (starting from the bottom). Check to see if the function already found a space for the computer's chip.
+          tempArray = layout.split(""); //store the current board layout in an array.
+          tempArray.splice( ((layout.length-1) - (i-computerMove)), 1, "R" ); //replace the empty space with a red chip (computer's colour).
+          layout = tempArray.join(); //make the board layout back into a string.
+          layout = layout.replace(/,/g, ""); //remove the commas that appeared as a result of cutting the string into multiple elements in an array.
+          replaced = true; //tell the function that you have replaced a chip.
+          message = false;
+        }
       }
     }
   }
+  triedInformedMove = false;
+  informedMove = false;
+}
+
+function cmCheck3h(chip){
+  var ePos;
+  var chip1Pos;
+  var chip2Pos;
+  var eBelow;
+
+  scenario = 1;
+
+  while(scenario < 5){
+
+    switch(scenario){ //four different scenarios. ERRR, RRRE, RERR, RRER (where R can be subsitute with Y).
+      case 1: ePos = 3; chip1Pos = 1; chip2Pos = 2; eBelow = 11; break;
+      case 2: ePos = -1; chip1Pos = 1; chip2Pos = 2; eBelow = 7; break;
+      case 3: ePos = 1; chip1Pos = 2; chip2Pos = 3; eBelow = 9; break;
+      case 4: ePos = 2; chip1Pos = 1; chip2Pos = 3;  eBelow = 10; break;
+    }
+
+    for(var i=1; i < (layout.length); i++){
+
+      if( (layout.charAt(i) == chip && layout.charAt(i+chip1Pos) == chip && layout.charAt(i+chip2Pos) == chip) && layout.charAt(i+ePos) == "E" && !informedMove  ){
+          if(i<41){
+            if(layout.charAt(i+eBelow) == "R" || layout.charAt(i+eBelow) == "Y"){
+              placeR(i+ePos);
+              message = "3h" + chip;
+            }
+          }
+          else{
+            placeR(i+ePos);
+            message = "3h" + chip;
+          }
+      }
+    }
+    scenario++;
+  }
+
+}
+
+function cmCheck3v(chip){
+  for(var i=26; i<layout.length;i++){
+      if( (layout.charAt(i) == chip && layout.charAt(i - 8) == chip && layout.charAt(i - 16) == chip) && layout.charAt(i - 24) == "E" && !informedMove ){
+            placeR(i-24);
+      }
+    }
+}
+
+function cmCheck3pd(chip){
+
+  scenario = 1;
+  var chip1Pos;
+  var chip2Pos;
+  var ePos;
+  var eBelow;
+
+  while(scenario < 5){
+
+
+    switch(scenario){
+      case 1: chip1Pos = -7; chip2Pos = -14; ePos = -21; eBelow = -13; break;
+      case 2: chip1Pos = -7; chip2Pos = -21; ePos = -14; eBelow = -6; break;
+      case 3: chip1Pos = -14; chip2Pos = -21; ePos = -7; eBelow = 1; break;
+      case 4: chip1Pos = -7; chip2Pos = -14; ePos = 7; eBelow = 15; break;
+    }
+
+      for(var i=17; i<(layout.length-5); i++){
+        if( (layout.charAt(i) == chip && layout.charAt(i + chip1Pos) == chip && layout.charAt(i + chip2Pos) == chip) && layout.charAt(i + ePos) == "E" && !informedMove ){
+            if(layout.charAt(i+eBelow) == "R" || layout.charAt(i+eBelow) == "Y"){
+              placeR(i+ePos);
+            }
+        }
+      }
+    scenario++;
+  }
+}
+
+function cmCheck3nd(chip){
+
+  scenario = 1;
+  var ePos;
+  var chip1Pos;
+  var chip2Pos;
+  var eBelow;
+
+  while(scenario < 5){
+
+  switch(scenario){
+    case 1: ePos = -27; chip1Pos = -9; chip2Pos = -18; eBelow = -19; break;
+    case 2: ePos = -18; chip1Pos = -9; chip2Pos = -27; eBelow = -10; break;
+    case 3: ePos = -9; chip1Pos = -18; chip2Pos = -27; eBelow = -1; break;
+    case 4: ePos = 9; chip1Pos = -9; chip2Pos = -18; eBelow = 17; break;
+  }
+
+    for(var i=19; i<layout.length; i++){
+      if( layout.charAt(i) == chip && layout.charAt(i + chip1Pos) == chip && layout.charAt(i + chip2Pos) == chip && layout.charAt(i + ePos) == "E" && (layout.charAt(i + eBelow) == "R" || layout.charAt(i + eBelow) == "Y") && !informedMove ){
+          placeR(i+ePos);
+      }
+    }
+    scenario++;
+  }
+}
+
+function cmCheck2h(chip){ //checks if there are 2 horizontal chips that could make a 3 in a row and, once as a 3 could make a 4 in a row.
+
+  var chipPos;
+  var e1Pos;
+  var e2Pos;
+  var e1Below;
+  var e2Below;
+
+  scenario = 1;
+
+  while( scenario < 7 ){
+
+    switch(scenario){ //6 different scenarios: RREE, RERE, REER, ERRE, ERER, EERR (originally figured out with Excel Document "Combinations.xlsx"
+      case 1: chipPos = 1; e1Pos = 2; e2Pos = 3; e1Below = 10; e2Below = 11; break;
+      case 2: chipPos = 2; e1Pos = 1; e2Pos = 3; e1Below = 9; e2Below = 11; break;
+      case 3: chipPos = 3; e1Pos = 1; e2Pos = 2; e1Below = 9; e2Below = 10; break;
+      case 4: chipPos = 1; e1Pos = -1; e2Pos = 2; e1Below = 7; e2Below = 10; break;
+      case 5: chipPos = 2; e1Pos = -1; e2Pos = 1; e1Below = 7; e2Below = 9; break;
+      case 6: chipPos = 1; e1Pos = -2; e2Pos = -1; e1Below = 6; e2Below = 7; break;
+    }
+
+    for(var i=1; i < (layout.length);i++){
+        if( (layout.charAt(i) == chip && layout.charAt(i+chipPos) == chip) && (layout.charAt(i+e1Pos) == "E" && layout.charAt(i+e2Pos) == "E") && !informedMove){
+          if(i<41){//checks if we're looking at the bottom row
+             if(layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){ //if below the empty space e1Pos there are non empty spaces (so it it legal to place a chip there). In all cases I found, this play (e1Pos) was a better or equal play compared to the e2Below play.
+               placeR(i+e1Pos);
+             }
+             else if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){ //if below the empty space e2Below there are non empty spaces (so it it legal to place a chip there).
+               placeR(i+e2Pos);
+           }
+         }
+         else{//if we are looking at the bottom row we can't (and wouldn't need to) look at the row below it - in this case we just put a red chip ("R") in e1Pos
+              placeR(e1Pos);
+         }
+        }
+      }
+      scenario++;
+    }
+}
+
+function cmCheck2v(chip){
+  for(var i=25; i<layout.length;i++){
+    if(layout.charAt(i) == chip && layout.charAt(i-8) == chip && layout.charAt(i-16) == "E"){ //don't have to check the space two rows above, if you start on row.
+      placeR(i-16);
+      computerMove = i % 8;
+    }
+  }
+}
+
+function cmCheck2pd(chip){
+  scenario = 1;
+  var chipPos;
+  var e1Pos;
+  var e2Pos;
+  var e1Below;
+  var e2Below;
+
+  while(scenario < 7){
+    switch(scenario){
+      case 1: chipPos = -7; e1Pos = 7; e2Pos = -14; e1Below = 15; e2Below = -6; break;
+      case 2: chipPos = -14; e1Pos = -7; e2Pos = -21; e1Below = 1; e2Below = -13; break;
+      case 3: chipPos = -7; e1Pos = -14; e2Pos = -21; e1Below = -6; e2Below = -13; break;
+      case 4: chipPos = -21; e1Pos = -7; e2Pos = -14; e1Below = 1; e2Below = -6; break;
+      case 5: chipPos = -14; e1Pos = 7; e2Pos = -7; e1Below = 8; e2Below = 1; break;
+      case 6: chipPos = -7; e1Pos = 14; e2Pos = 7; e1Below = 22; e2Below = 15; break;
+    }
+    for(var i=4;i<layout.length-4;i++){
+      if(layout.charAt(i) == chip && layout.charAt(i+chipPos) == chip && layout.charAt(i+e1Pos) == "E" && layout.charAt(i+e2Pos) == "E" && !informedMove){
+        if(scenario == 1){ //i=19
+          if(i > 33){ //if bottom row, the higher one will be better.
+            if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+              placeR(i + e2Pos);
+            }else{
+              placeR(i + e1Pos);
+            }
+          }else if(layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){
+            placeR(i + e1Pos);
+          }else if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+            placeR(i + e2Pos);
+          }
+        }
+
+        else if(scenario == 2 || scenario == 3){ //in all scenarios the E in between the two R's is equal or better I found.
+          if( (layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y")){
+            placeR(i + e1Pos);
+          }else if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+            placeR(i + e2Pos);
+          }
+        }
+        else if(scenario == 4){
+
+          if( (layout.charAt(i+e2Below) == "Y" || layout.charAt(i+e2Below) == "R") && layout.charAt(i-28) == "E" && !((layout.charAt(i+e1Below) == "Y" || layout.charAt(i+e1Below) == "R") && layout.charAt(i+7) == "E") ){ //if there is not an empty space further down the diagonal (outside the intended play) AND there is an empty space further up the diagonal (outside the intended play) AND we can play at the higher up E, place at the higher up E. If not, place at the lower down E.
+            placeR(i + e2Pos);
+          }else if(layout.charAt(i+e1Below) == "Y" || layout.charAt(i+e1Below) == "R"){
+            placeR(i + e1Pos);
+          }
+        }else if(scenario == 5){ //in all scenarios the E in between the two R's is equal or better I found. EQUATE FOR BOTTOM ROW.
+          if(i>33){ //if bottom row
+            if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+              placeR(i + e2Pos);
+            }else{
+              placeR(i + e1Pos);
+            }
+          }else{
+            if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+              placeR(i + e2Pos);
+            }else if(layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){
+              placeR(i + e1Pos);
+            }
+          }
+        }else if(scenario == 6){
+            if(i > 26){//if second e is going to be on the bottom row
+              if(layout.charAt(i + e1Below) == "R" || layout.charAt(i + e1Below) == "Y"){
+                placeR(i + e1Pos);
+              }else{
+                placeR(i + e2Pos);
+              }
+            }else{ //if not bottom row
+              if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+                placeR(i + e2Pos);
+              }else if(layout.charAt(i + e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){
+                placeR(i + e1Pos);
+              }
+            }
+        }
+      }
+    }
+    scenario++;
+  }
+}
+
+function cmCheck2nd(chip){
+  scenario = 1;
+  var chipPos;
+  var e1Pos;
+  var e2Pos;
+  var e1Below;
+  var e2Below;
+
+  while(scenario < 7){
+
+    switch(scenario){
+      case 1: chipPos = -9; e1Pos = 9; e2Pos = -18; e1Below = 17; e2Below = -10; break;
+      case 2: chipPos = -18; e1Pos = -9; e2Pos = -27; e1Below = -1; e2Below = -19; break;
+      case 3: chipPos = -9; e1Pos = -18; e2Pos = -27; e1Below = -10; e2Below = -19; break;
+      case 4: chipPos = -27; e1Pos = -9; e2Pos = -18; e1Below = -1; e2Below = -10; break;
+      case 5: chipPos = -18; e1Pos = 9; e2Pos = -9; e1Below = 17; e2Below = -1; break;
+      case 6: chipPos = -9; e1Pos = 9; e2Pos = 18; e1Below = 17; e2Below = 26; break;
+    }
+
+    for(var i=10; i < layout.length; i++){
+      if(layout.charAt(i) == chip && layout.charAt(i+chipPos) == chip && layout.charAt(i+e1Pos) == "E" && layout.charAt(i+e2Pos) == "E" && !informedMove){
+        if(scenario == 1){
+          if(i > 34){//bottom row
+            if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+              placeR(i+e2Pos);
+            }
+            else{
+              placeR(i+e1Pos);
+            }
+          }
+          else if((layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y") && !(layout.charAt(i+e2Pos-9) == "E" && (layout.charAt(i+e2Below) == "Y" || layout.charAt(i+e2Below) == "R"))){
+              placeR(i+e1Pos);
+          }else if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+              placeR(i+e2Pos);
+          }
+        }
+
+        else if(scenario == 2){
+          if( (layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y") && !(layout.charAt(i+e2Pos - 9) == chip && layout.charAt(i+e2Pos-18) == "E" && (layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y") ) ){
+            placeR(i+e1Pos);
+          }else if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+            placeR(i+e2Pos);
+          }
+        }
+
+        else if(scenario == 3){
+          if(layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){
+            placeR(i+e1Pos);
+          }else if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+            placeR(i+e2Pos);
+          }
+        }
+
+        else if(scenario == 4){
+            if( (layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y") && !(layout.charAt(i+9) == chip && (layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y")) && !( i == 28 || i == 29 ) ){
+              placeR(i+e2Pos);
+            }else if(layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){
+              placeR(i+e1Pos);
+            }
+        }
+
+        else if(scenario == 5){
+          if(i > 34){
+            if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+              placeR(i+e2Pos);
+            }else{
+              placeR(i+e1Pos);
+            }
+          }else if( (layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y") && !( layout.charAt(i+e1Pos+9) == chip && layout.charAt(i+e1+18) == "E" && (layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"))){
+            placeR(i+e2Pos);
+          }else if(layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){
+            placeR(i+e1Pos);
+          }
+        }
+
+        else if(scenario == 6){
+          if(i > 25){ //bottom
+            if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+              placeR(i+e2Pos);
+            }else{
+              placeR(i+e1Pos);
+            }
+          }else if(layout.charAt(i+e1Below) == "R" || layout.charAt(i+e1Below) == "Y"){
+            placeR(i+e1Pos);
+          }else if(layout.charAt(i+e2Below) == "R" || layout.charAt(i+e2Below) == "Y"){
+            placeR(i+e2Pos);
+          }
+        }
+      }
+    }
+    scenario++;
+  }
+}
+
+function placeR(position){
+  //ALL EXAMPLES KEEP COMPUTER MOVE & MESSAGE
+  tempArray = layout.split(""); //store the current board layout in an array.
+  tempArray.splice( (position), 1, "R" ); //replace the empty space with a red chip (computer's colour).
+  layout = tempArray.join(); //make the board layout back into a string.
+  layout = layout.replace(/,/g, ""); //remove the commas that appeared as a result of cutting the string into multiple elements in an array.
+  computerMove = position % 8;
+  informedMove = true; //tell the function that you have found and rolled an informedMove.
 }
 
 function layoutDisplay(){ //function to create the display of the layout/state of the board. This formats the string in such a way that makes it easier for the player to understand.
